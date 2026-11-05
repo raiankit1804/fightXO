@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Strike Arena – Browser Fighting Game</title>
+<meta name="description" content="Strike Arena: a free 2D browser fighting game. Play vs CPU or a friend. No download.">
+<style>
+:root{--u:9.6px;--o:#ff7a18;--p:#ff2e88;--c:#22d3ee;--bg:#0a0816}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;background:#05040c;color:#fff;font-family:"Trebuchet MS",Verdana,sans-serif;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center}
+#wrap{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;background:var(--bg);overflow:hidden}
+canvas#game{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 30%,rgba(60,20,90,.88),rgba(8,6,20,.96));text-align:center;z-index:5;padding:calc(var(--u)*1.5)}
+h1.logo{margin:0;padding:0 calc(var(--u)*1.5);font-family:Impact,Haettenschweiler,"Arial Black",sans-serif;font-style:italic;font-size:calc(var(--u)*11);letter-spacing:calc(var(--u)*.3);line-height:.95;
+  background:linear-gradient(180deg,#fff 10%,var(--o) 55%,var(--p));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 calc(var(--u)*.5) 0 rgba(0,0,0,.6)) drop-shadow(0 0 calc(var(--u)*2) rgba(255,70,120,.45))}
+.tag{font-size:calc(var(--u)*1.6);letter-spacing:calc(var(--u)*.6);color:#c9b8ff;margin:calc(var(--u)*1) 0 calc(var(--u)*2.5)}
+#title h1.logo{font-size:calc(var(--u)*9)}
+h2{font-family:Impact,"Arial Black",sans-serif;font-size:calc(var(--u)*4);margin:0 0 calc(var(--u)*1);letter-spacing:calc(var(--u)*.2);font-style:italic}
+.btn{font-family:Impact,"Arial Black",sans-serif;font-size:calc(var(--u)*2.6);letter-spacing:calc(var(--u)*.15);color:#fff;border:calc(var(--u)*.25) solid rgba(255,255,255,.25);
+  background:linear-gradient(180deg,#3a2a6b,#1f1640);padding:calc(var(--u)*1) calc(var(--u)*4);margin:calc(var(--u)*.6);cursor:pointer;border-radius:calc(var(--u)*.8);
+  transform:skewX(-8deg);transition:.12s;min-width:calc(var(--u)*24)}
+.btn:hover,.btn:focus{background:linear-gradient(180deg,var(--o),var(--p));transform:skewX(-8deg) scale(1.06);outline:none}
+.btn.small{font-size:calc(var(--u)*1.8);padding:calc(var(--u)*.6) calc(var(--u)*2);min-width:0}
+.btn.on{background:linear-gradient(180deg,var(--c),#2563eb);border-color:#fff}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:skewX(-8deg)}
+.row{display:flex;gap:calc(var(--u)*1);justify-content:center;align-items:center;flex-wrap:wrap}
+.small-t{font-size:calc(var(--u)*1.5);color:#b9b3d6}
+#cards{display:flex;gap:calc(var(--u)*1);margin:calc(var(--u)*1) 0}
+.card{width:calc(var(--u)*13.6);background:linear-gradient(180deg,#241a4a,#120d28);border:calc(var(--u)*.25) solid #3d2f78;border-radius:calc(var(--u)*1);
+  padding:calc(var(--u)*.8);cursor:pointer;transition:.12s;position:relative}
+.card:hover{transform:translateY(calc(var(--u)*-.6));border-color:var(--o)}
+.card canvas{width:100%;display:block;background:radial-gradient(circle at 50% 70%,rgba(255,255,255,.18),transparent 70%);border-radius:calc(var(--u)*.6)}
+.card .nm{font-family:Impact,sans-serif;font-size:calc(var(--u)*2.6);letter-spacing:calc(var(--u)*.1)}
+.card .tt{font-size:calc(var(--u)*1.2);color:#c9b8ff}
+.card .st{display:grid;grid-template-columns:auto 1fr;gap:calc(var(--u)*.25) calc(var(--u)*.6);font-size:calc(var(--u)*1.05);text-align:left;margin-top:calc(var(--u)*.5);color:#bbb}
+.bar{height:calc(var(--u)*.7);background:#000;border-radius:9px;overflow:hidden;align-self:center}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--o))}
+.card .sp{font-size:calc(var(--u)*1.1);margin-top:calc(var(--u)*.5);color:var(--o)}
+.badge{position:absolute;top:calc(var(--u)*-.8);left:50%;transform:translateX(-50%);padding:calc(var(--u)*.2) calc(var(--u)*1);border-radius:99px;font-weight:bold;font-size:calc(var(--u)*1.3);display:none}
+.badge.p0{background:var(--c);color:#002;display:block}.badge.p1{background:var(--p);display:block}.badge.pb{background:linear-gradient(90deg,var(--c),var(--p));display:block;color:#fff}
+.help{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*2);font-size:calc(var(--u)*1.5);text-align:left;max-width:calc(var(--u)*80)}
+.help div{background:rgba(255,255,255,.07);padding:calc(var(--u)*1.2);border-radius:calc(var(--u)*.8)}
+.help b{color:var(--o)}
+kbd{background:#2c2350;border:1px solid #6a58b8;border-radius:4px;padding:0 calc(var(--u)*.5);font-family:monospace}
+#topbtns{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--u)*8.4);scale:.8;z-index:8;display:flex;gap:calc(var(--u)*.6)}
+#topbtns button{width:calc(var(--u)*3.6);height:calc(var(--u)*3.6);border-radius:50%;border:0;background:rgba(0,0,0,.5);color:#fff;font-size:calc(var(--u)*1.8);cursor:pointer}
+#touch{position:absolute;inset:auto 0 0 0;height:40%;z-index:7;pointer-events:none;display:none}
+.coarse #touch.active{display:block}
+#touch .t{position:absolute;pointer-events:auto;width:calc(var(--u)*8);height:calc(var(--u)*8);border-radius:50%;background:rgba(255,255,255,.14);
+  border:2px solid rgba(255,255,255,.35);color:#fff;font:bold calc(var(--u)*2.4) Impact,sans-serif;display:flex;align-items:center;justify-content:center;touch-action:none}
+#touch .t.down{background:rgba(255,120,30,.55)}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+
+  <div id="title" class="screen">
+    <h1 class="logo">STRIKE<br>ARENA</h1>
+    <div class="tag">4 FIGHTERS · 3 ARENAS · ONE CHAMPION</div>
+    <div class="row">
+      <button class="btn" id="barc">ARCADE</button>
+      <button class="btn" id="b1p">VS CPU</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="b2p">2 PLAYERS</button>
+      <button class="btn" id="btr">TRAINING</button>
+    </div>
+    <button class="btn small" id="bhow">HOW TO PLAY</button>
+    <div class="small-t" id="best" style="margin-top:calc(var(--u)*1)"></div>
+  </div>
+
+  <div id="select" class="screen hidden">
+    <h2 id="selTitle">CHOOSE YOUR FIGHTER</h2>
+    <div id="cards"></div>
+    <div class="row" id="optRow">
+      <span class="small-t">ARENA</span>
+      <button class="btn small" data-stage="0">NEON ROOF</button>
+      <button class="btn small" data-stage="1">SUNSET TEMPLE</button>
+      <button class="btn small" data-stage="2">FROZEN DOCK</button>
+      <button class="btn small" data-stage="-1">RANDOM</button>
+    </div>
+    <div class="row" id="diffRow">
+      <span class="small-t">CPU LEVEL</span>
+      <button class="btn small" data-diff="0">EASY</button>
+      <button class="btn small" data-diff="1">NORMAL</button>
+      <button class="btn small" data-diff="2">HARD</button>
+    </div>
+    <div class="row">
+      <button class="btn small" id="bback">BACK</button>
+      <button class="btn small" id="brand">RANDOM PICK</button>
+      <button class="btn" id="bfight" disabled>FIGHT!</button>
+    </div>
+  </div>
+
+  <div id="howto" class="screen hidden">
+    <h2>HOW TO PLAY</h2>
+    <div class="help">
+      <div><b>PLAYER 1</b><br><kbd>A</kbd><kbd>D</kbd> move · <kbd>W</kbd> jump · <kbd>S</kbd> block<br><kbd>F</kbd> punch · <kbd>G</kbd> kick · <kbd>H</kbd> special · <kbd>R</kbd> SUPER<br><span class="small-t">In 1-player mode the arrow keys + <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>I</kbd> also work.</span></div>
+      <div><b>PLAYER 2</b><br><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd> jump · <kbd>↓</kbd> block<br><kbd>J</kbd> punch · <kbd>K</kbd> kick · <kbd>L</kbd> special · <kbd>I</kbd> SUPER</div>
+      <div><b>MODES</b><br><b>Arcade</b>: beat all 5 rivals for a high score (saved on this device). <b>Training</b>: infinite time, free meter, passive dummy. Gamepads work too (X punch, A kick, Y special, B/RB super).</div>
+      <div><b>ADVANCED</b><br><b>Double-tap</b> ←/→ to dash (a back-dash is briefly invincible). Hold <b>block + kick</b> for a knockdown sweep. Perfect rounds give big bonus points. <b>Frost</b>'s shards slow the enemy. Best of 3 rounds, 60s each. <kbd>P</kbd>/<kbd>Esc</kbd> pauses.</div>
+    </div>
+    <button class="btn small" id="bhowback" style="margin-top:calc(var(--u)*2)">BACK</button>
+  </div>
+
+  <div id="pausescr" class="screen hidden" style="background:rgba(5,4,12,.8)">
+    <h2>PAUSED</h2>
+    <button class="btn" id="bresume">RESUME</button>
+    <button class="btn" id="bquit">QUIT TO MENU</button>
+  </div>
+
+  <div id="endscr" class="screen hidden" style="background:rgba(5,4,12,.78)">
+    <h1 class="logo" id="endTitle" style="font-size:calc(var(--u)*8)">K.O.</h1>
+    <div class="tag" id="endSub"></div>
+    <button class="btn" id="brematch">REMATCH</button>
+    <button class="btn" id="bchange">CHANGE FIGHTERS</button>
+    <button class="btn small" id="bmenu">MAIN MENU</button>
+  </div>
+
+  <div id="touch">
+    <div class="t" data-k="KeyA" style="left:2%;bottom:22%">◀</div>
+    <div class="t" data-k="KeyD" style="left:19%;bottom:22%">▶</div>
+    <div class="t" data-k="KeyW" style="left:10.5%;bottom:50%">▲</div>
+    <div class="t" data-k="KeyS" style="left:10.5%;bottom:2%">▼</div>
+    <div class="t" data-k="KeyF" style="right:20%;bottom:6%">P</div>
+    <div class="t" data-k="KeyG" style="right:3%;bottom:6%">K</div>
+    <div class="t" data-k="KeyH" style="right:20%;bottom:40%">SP</div>
+    <div class="t" data-k="KeyR" style="right:3%;bottom:40%">⚡</div>
+  </div>
+
+  <div id="topbtns"><button id="mute" title="Sound">🔊</button><button id="pausebtn" title="Pause">⏸</button><button id="fsbtn" title="Fullscreen">⛶</button></div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
