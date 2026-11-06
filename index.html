@@ -2,15 +2,31 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#05040c">
 <title>Strike Arena – Browser Fighting Game</title>
 <meta name="description" content="Strike Arena: a free 2D browser fighting game. Play vs CPU or a friend. No download.">
 <style>
 :root{--u:9.6px;--o:#ff7a18;--p:#ff2e88;--c:#22d3ee;--bg:#0a0816}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{margin:0;height:100%;background:#05040c;color:#fff;font-family:"Trebuchet MS",Verdana,sans-serif;overflow:hidden}
-body{display:flex;align-items:center;justify-content:center}
-#wrap{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;background:var(--bg);overflow:hidden}
+html,body{margin:0;height:100%;background:#05040c;color:#fff;font-family:"Trebuchet MS",Verdana,sans-serif;overflow:hidden;overscroll-behavior:none;touch-action:none}
+body{display:flex;align-items:center;justify-content:center;height:100vh;height:100dvh;width:100vw;position:fixed;inset:0;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#wrap{position:relative;width:min(100%,calc(100vh*16/9));width:min(100%,calc(100dvh*16/9));max-height:100%;aspect-ratio:16/9;background:var(--bg);overflow:hidden}
+/* rotate gate: touch devices in portrait */
+#rotate{display:none;position:fixed;inset:0;z-index:999;background:radial-gradient(circle at 50% 40%,#2a1650,#05040c);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+#rotate .ph{width:64px;height:104px;border:5px solid #fff;border-radius:14px;position:relative;animation:rot 2.4s ease-in-out infinite;margin-bottom:28px;box-shadow:0 0 24px rgba(255,90,140,.6)}
+#rotate .ph:after{content:"";position:absolute;left:50%;bottom:6px;width:16px;height:4px;margin-left:-8px;background:#fff;border-radius:3px}
+@keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+#rotate h3{font-family:Impact,"Arial Black",sans-serif;font-size:28px;margin:0 0 8px;letter-spacing:1px;font-style:italic}
+#rotate p{margin:0;color:#c9b8ff;font-size:15px}
+@media (orientation:portrait){
+  body.coarse #rotate{display:flex}
+  body.coarse #wrap{visibility:hidden}
+}
 canvas#game{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hidden{display:none!important}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -37,7 +53,7 @@ h2{font-family:Impact,"Arial Black",sans-serif;font-size:calc(var(--u)*4);margin
 .card canvas{width:100%;display:block;background:radial-gradient(circle at 50% 70%,rgba(255,255,255,.18),transparent 70%);border-radius:calc(var(--u)*.6)}
 .card .nm{font-family:Impact,sans-serif;font-size:calc(var(--u)*2.6);letter-spacing:calc(var(--u)*.1)}
 .card .tt{font-size:calc(var(--u)*1.2);color:#c9b8ff}
-.card .st{display:grid;grid-template-columns:auto 1fr;gap:calc(var(--u)*.25) calc(var(--u)*.6);font-size:calc(var(--u)*1.05);text-align:left;margin-top:calc(var(--u)*.5);color:#bbb}
+.card .st{display:grid;grid-template-columns:auto 1fr;gap:calc(var(--u)*.25) calc(var(--u)*.6);font-size:calc(var(--u)*1.2);text-align:left;margin-top:calc(var(--u)*.5);color:#bbb}
 .bar{height:calc(var(--u)*.7);background:#000;border-radius:9px;overflow:hidden;align-self:center}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--o))}
 .card .sp{font-size:calc(var(--u)*1.1);margin-top:calc(var(--u)*.5);color:var(--o)}
@@ -47,16 +63,18 @@ h2{font-family:Impact,"Arial Black",sans-serif;font-size:calc(var(--u)*4);margin
 .help div{background:rgba(255,255,255,.07);padding:calc(var(--u)*1.2);border-radius:calc(var(--u)*.8)}
 .help b{color:var(--o)}
 kbd{background:#2c2350;border:1px solid #6a58b8;border-radius:4px;padding:0 calc(var(--u)*.5);font-family:monospace}
-#topbtns{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--u)*8.4);scale:.8;z-index:8;display:flex;gap:calc(var(--u)*.6)}
+#topbtns{display:none;position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--u)*8.4);scale:.8;z-index:8;display:flex;gap:calc(var(--u)*.6)}
 #topbtns button{width:calc(var(--u)*3.6);height:calc(var(--u)*3.6);border-radius:50%;border:0;background:rgba(0,0,0,.5);color:#fff;font-size:calc(var(--u)*1.8);cursor:pointer}
-#touch{position:absolute;inset:auto 0 0 0;height:40%;z-index:7;pointer-events:none;display:none}
+#touch{position:fixed;inset:auto 0 0 0;height:50%;z-index:7;pointer-events:none;display:none}
 .coarse #touch.active{display:block}
 #touch .t{position:absolute;pointer-events:auto;width:calc(var(--u)*8);height:calc(var(--u)*8);border-radius:50%;background:rgba(255,255,255,.14);
   border:2px solid rgba(255,255,255,.35);color:#fff;font:bold calc(var(--u)*2.4) Impact,sans-serif;display:flex;align-items:center;justify-content:center;touch-action:none}
 #touch .t.down{background:rgba(255,120,30,.55)}
+body.infight #topbtns{display:flex}
 </style>
 </head>
 <body>
+<div id="rotate"><div class="ph"></div><h3>ROTATE YOUR DEVICE</h3><p>Strike Arena plays in landscape.<br>Turn your phone or tablet sideways to start.</p></div>
 <div id="wrap">
   <canvas id="game"></canvas>
 
@@ -123,7 +141,10 @@ kbd{background:#2c2350;border:1px solid #6a58b8;border-radius:4px;padding:0 calc
     <button class="btn small" id="bmenu">MAIN MENU</button>
   </div>
 
-  <div id="touch">
+
+  <div id="topbtns"><button id="mute" title="Sound">🔊</button><button id="pausebtn" title="Pause">⏸</button><button id="fsbtn" title="Fullscreen">⛶</button></div>
+</div>
+<div id="touch">
     <div class="t" data-k="KeyA" style="left:2%;bottom:22%">◀</div>
     <div class="t" data-k="KeyD" style="left:19%;bottom:22%">▶</div>
     <div class="t" data-k="KeyW" style="left:10.5%;bottom:50%">▲</div>
@@ -133,9 +154,6 @@ kbd{background:#2c2350;border:1px solid #6a58b8;border-radius:4px;padding:0 calc
     <div class="t" data-k="KeyH" style="right:20%;bottom:40%">SP</div>
     <div class="t" data-k="KeyR" style="right:3%;bottom:40%">⚡</div>
   </div>
-
-  <div id="topbtns"><button id="mute" title="Sound">🔊</button><button id="pausebtn" title="Pause">⏸</button><button id="fsbtn" title="Fullscreen">⛶</button></div>
-</div>
 <script src="game.js"></script>
 </body>
 </html>

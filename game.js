@@ -678,13 +678,14 @@ let last = performance.now(), acc = 0;
 function frame(now) {
   acc += Math.min(100, now - last); last = now;
   pollPads();
+  if (state === 'fight' && G && !G.paused && G.phase !== 'end' && portraitTouch()) { held.clear(); togglePause(); } // auto-pause if rotated to portrait
   while (acc >= 1000 / 60) { if (state === 'fight') update(); else if (G && state !== 'fight') { /* idle */ } acc -= 1000 / 60; }
   render(); requestAnimationFrame(frame);
 }
 
 /* ---------------- UI ---------------- */
-function show(id) { document.querySelectorAll('.screen').forEach(e => e.classList.add('hidden')); if (id) $(id).classList.remove('hidden'); }
-function fit() { $('wrap').style.setProperty('--u', ($('wrap').clientWidth / 100) + 'px'); }
+function show(id) { document.querySelectorAll('.screen').forEach(e => e.classList.add('hidden')); if (id) $(id).classList.remove('hidden'); document.body.classList.toggle('infight', !id); }
+function fit() { document.documentElement.style.setProperty('--u', ($('wrap').clientWidth / 100) + 'px'); }
 addEventListener('resize', fit); fit();
 
 const cardsEl = $('cards');
@@ -741,7 +742,20 @@ $('bback').onclick = () => show('title');
 $('brand').onclick = () => { SFX.ui(); sel = [CHARS[Math.random() * CHARS.length | 0], CHARS[Math.random() * CHARS.length | 0]]; turn = 0; refreshSel(); };
 document.querySelectorAll('[data-stage]').forEach(b => b.onclick = () => { stageSel = +b.dataset.stage; SFX.ui(); refreshSel(); });
 document.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { diff = +b.dataset.diff; SFX.ui(); refreshSel(); });
+function portraitTouch() { return document.body.classList.contains('coarse') && innerHeight > innerWidth; }
+function inFullscreen() { return document.fullscreenElement || document.webkitFullscreenElement; }
+function goFullscreen() {
+  if (inFullscreen()) return;
+  const el = document.documentElement, rq = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!rq) return; // e.g. iPhone Safari: not supported, the page already fills the screen
+  try {
+    const p = rq.call(el, { navigationUI: 'hide' });
+    if (p && p.then) p.then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => {});
+  } catch (e) {}
+}
 function beginFight() {
+  if (portraitTouch()) return; // game only starts in landscape on phones/tablets
+  goFullscreen();
   show(null); state = 'fight'; startMatch(); startMusic();
   $('touch').classList.toggle('active', mode === 1 || true);
 }
@@ -757,8 +771,9 @@ $('bresume').onclick = togglePause;
 $('pausebtn').onclick = () => { if (state === 'fight') togglePause(); };
 $('bquit').onclick = () => { $('pausescr').classList.add('hidden'); state = 'menu'; G = null; ARC = null; stopMusic(); showBest(); show('title'); $('touch').classList.remove('active'); };
 $('mute').onclick = () => { muted = !muted; $('mute').textContent = muted ? '🔇' : '🔊'; if (muted) stopMusic(); else if (state === 'fight') startMusic(); };
-$('fsbtn').onclick = () => { const d = document, w = $('wrap'); if (!d.fullscreenElement) (w.requestFullscreen || w.webkitRequestFullscreen || (() => {})).call(w); else d.exitFullscreen(); };
-document.addEventListener('fullscreenchange', fit);
+$('fsbtn').onclick = () => { if (inFullscreen()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else goFullscreen(); };
+['fullscreenchange', 'webkitfullscreenchange', 'orientationchange'].forEach(ev => addEventListener(ev, () => { fit(); setTimeout(fit, 250); }));
+if (window.visualViewport) visualViewport.addEventListener('resize', fit);
 ['gesturestart', 'dblclick'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
 
 refreshSel(); showBest();
